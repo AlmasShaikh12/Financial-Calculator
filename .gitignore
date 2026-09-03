@@ -1,0 +1,24 @@
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Python virtual environments
+venv/
+.venv/
+
+# Node dependencies
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Environment files / secrets
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db

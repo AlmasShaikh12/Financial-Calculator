@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIH Financial Calculator — Scheme Router</title>
+  <style>
+    /* =========================================================
+       BASE & RESET
+       ========================================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #1a5276;
+      --primary-light: #2980b9;
+      --accent: #27ae60;
+      --accent-dark: #1e8449;
+      --warning-bg: #fef9e7;
+      --warning-border: #f39c12;
+      --warning-text: #7d6608;
+      --error-bg: #fdedec;
+      --error-border: #e74c3c;
+      --error-text: #922b21;
+      --bg: #f4f6f9;
+      --card-bg: #ffffff;
+      --text: #2c3e50;
+      --text-light: #5d6d7e;
+      --border: #dce1e6;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* =========================================================
+       LAYOUT
+       ========================================================= */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: 1.75rem;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    header p {
+      color: var(--text-light);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon {
+      font-size: 1.25rem;
+    }
+
+    /* =========================================================
+       LANGUAGE SELECTOR
+       ========================================================= */
+    .lang-bar {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .lang-btn {
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #f4f6f9;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-light);
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .lang-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .lang-btn:hover:not(.active) {
+      background: #e8ecf0;
+    }
+
+    /* =========================================================
+       INPUT SECTION
+       ========================================================= */
+    .input-group {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      flex: 1;
+      min-width: 220px;
+    }
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1.1rem;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .field input:focus {
+      border-color: var(--primary-light);
+    }
+    .field input.error {
+      border-color: var(--error-border);
+      background: var(--error-bg);
+    }
+    .field input::placeholder {
+      color: #aab;
+    }
+
+    .error-msg {
+      color: var(--error-text);
+      font-size: 0.82rem;
+      margin-top: 6px;
+      min-height: 1.2em;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--primary-light); }
+
+    .btn-reset {
+      background: #ecf0f1;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-reset:hover { background: #dce1e6; }
+
+    /* =========================================================
+       RESULTS
+       ========================================================= */
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 600px) {
+      .results-grid { grid-template-columns: 1fr; }
+    }
+
+    .result-box {
+      background: #f8f9fb;
+      border-radius: 8px;
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+    }
+    .result-box.highlight {
+      background: #eaf2f8;
+      border-color: var(--primary-light);
+    }
+    .result-box .label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-light);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .result-box .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .result-box .sub {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .result-box.green .value { color: var(--accent); }
+
+    /* =========================================================
+       SCHEME CARD
+       ========================================================= */
+    .scheme-card {
+      border-left: 4px solid var(--accent);
+      padding-left: 16px;
+    }
+    .scheme-card .scheme-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent-dark);
+      margin-bottom: 12px;
+    }
+
+    .scheme-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 600px) {
+      .scheme-details { grid-template-columns: 1fr; }
+    }
+    .scheme-detail {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    .scheme-detail .dl { color: var(--text-light); font-size: 0.88rem; }
+    .scheme-detail .dv { font-weight: 600; font-size: 0.95rem; }
+
+    /* =========================================================
+       WARNING / DISCLAIMER
+       ========================================================= */
+    .warning-box {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      color: var(--warning-text);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .warning-box strong { color: #7d6608; }
+
+    .disclaimer {
+      background: #f0f4f8;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      color: var(--text-light);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      margin-top: 24px;
+    }
+    .disclaimer strong { color: var(--text); }
+
+    .source-ref {
+      background: #f8f9fb;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      color: var(--text-light);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+    .source-ref strong { color: var(--text); }
+
+    /* =========================================================
+       INSTALMENT SUMMARY (quarterly as primary)
+       ========================================================= */
+    .instalment-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    @media (max-width: 600px) {
+      .instalment-grid { grid-template-columns: 1fr; }
+    }
+    .instalment-item {
+      text-align: center;
+      padding: 14px;
+      background: #f8f9fb;
+      border-radius: 8px;
+    }
+    .instalment-item .inst-val {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .instalment-item .inst-lbl {
+      font-size: 0.78rem;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+
+    /* =========================================================
+       FEASIBILITY SUMMARY
+       ========================================================= */
+    .feasibility-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    .feasibility-row:last-child { border-bottom: none; }
+    .feasibility-row .fl { color: var(--text-light); font-size: 0.9rem; }
+    .feasibility-row .fv {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+    .feasibility-row.highlight .fv {
+      font-size: 1.15rem;
+      color: var(--accent);
+    }
+
+    /* =========================================================
+       SCHEDULE TABLE
+       ========================================================= */
+    .schedule-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      padding: 8px 20px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #f4f6f9;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-light);
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .schedule-table-wrap {
+      max-height: 420px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 12px;
+      text-align: right;
+      font-weight: 600;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    thead th:first-child { text-align: center; }
+
+    tbody td {
+      padding: 9px 12px;
+      text-align: right;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    tbody td:first-child { text-align: center; font-weight: 600; }
+    tbody tr:hover { background: #f8f9fb; }
+    tbody tr:nth-child(even) { background: #fafbfc; }
+    tbody tr:nth-child(even):hover { background: #f0f4f8; }
+
+    /* quarterly row highlight */
+    .qtr-end td {
+      border-bottom: 2px solid var(--primary-light) !important;
+      font-weight: 600;
+    }
+
+    /* Moratorium row styling */
+    tr.moratorium-row {
+      background: #fef9e7 !important;
+    }
+    tr.moratorium-row:hover {
+      background: #fdf2d8 !important;
+    }
+    tr.moratorium-row td {
+      color: #7d6608;
+      font-style: italic;
+    }
+    tr.moratorium-row td:first-child {
+      font-style: normal;
+    }
+    .status-moratorium {
+      display: inline-block;
+      background: #f39c12;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      font-style: normal;
+    }
+    .status-repayment {
+      display: inline-block;
+      background: #27ae60;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      font-style: normal;
+    }
+    /* Repayment row number column */
+    td.repayment-num {
+      font-weight: 600;
+    }
+
+    /* =========================================================
+       SECTION TITLE (collapsible)
+       ========================================================= */
+    .section-toggle {
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-toggle .arrow {
+      display: inline-block;
+      transition: transform 0.2s;
+      margin-right: 4px;
+    }
+    .section-toggle.open .arrow {
+      transform: rotate(90deg);
+    }
+
+    /* Hide by default */
+    .collapsible { display: none; }
+    .collapsible.open { display: block; }
+
+    /* =========================================================
+       NOTIFICATION TOAST
+       ========================================================= */
+    .no-scheme-msg {
+      text-align: center;
+      padding: 32px 20px;
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+    .no-scheme-msg .big-icon {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <h1 data-i18n="title">₹ Financial Calculator</h1>
+      <p data-i18n="subtitle">Calculate your project cost, loan eligibility &amp; repayment schedule</p>
+      <div class="lang-bar">
+        <button class="lang-btn active" onclick="setLanguage('en')">English</button>
+        <button class="lang-btn" onclick="setLanguage('hi')">हिन्दी</button>
+        <button class="lang-btn" onclick="setLanguage('mr')">मराठी</button>
+      </div>
+    </header>
+
+    <!-- Input Card -->
+    <div class="card" id="inputCard">
+      <div class="card-title"><span class="icon">💰</span> <span data-i18n="enterContribution">Enter Your Contribution</span></div>
+      <p style="font-size:0.9rem;color:var(--text-light);margin-bottom:16px;" data-i18n="inputDescription">
+        Enter the amount you can contribute (your margin capital). The calculator
+        will estimate the total project cost, potential loan, and recommended scheme.
+      </p>
+      <div class="input-group">
+        <div class="field">
+          <label for="marginInput" data-i18n="marginLabel">Available Margin Capital (₹)</label>
+          <input type="text" id="marginInput" data-i18n-placeholder="marginPlaceholder" placeholder="e.g. 1,00,000" autocomplete="off" />
+          <div class="error-msg" id="errorMsg"></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="calcBtn" onclick="handleCalculate()" data-i18n="calculateBtn">Calculate</button>
+          <button class="btn btn-reset" id="resetBtn" onclick="handleReset()" data-i18n="resetBtn">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results (hidden until calculation) -->
+    <div id="resultsArea" style="display:none;">
+
+      <!-- Warning (conditionally shown) -->
+      <div id="warningBox" class="warning-box" style="display:none;"></div>
+
+      <!-- Feasibility Summary -->
+      <div class="card" id="feasibilityCard">
+        <div class="card-title"><span class="icon">📊</span> <span data-i18n="feasibilitySummary">Financial Feasibility Summary</span></div>
+        <div class="feasibility-row highlight">
+          <span class="fl" data-i18n="yourContribution">Your Contribution</span>
+          <span class="fv" id="fMargin"></span>
+        </div>
+        <div class="feasibility-row">
+          <span class="fl" data-i18n="projectCostEst">Project Cost (estimated)</span>
+          <span class="fv" id="fProjectCost"></span>
+        </div>
+        <div class="feasibility-row">
+          <span class="fl" data-i18n="potentialLoan">Potential Loan</span>
+          <span class="fv" id="fLoan"></span>
+        </div>
+        <div class="feasibility-row" id="fSchemeRow">
+          <span class="fl" data-i18n="recommendedScheme">Recommended Scheme</span>
+          <span class="fv" id="fScheme"></span>
+        </div>
+        <div class="feasibility-row" id="fInterestRow">
+          <span class="fl" data-i18n="interestRate">Interest Rate</span>
+          <span class="fv" id="fInterest"></span>
+        </div>
+        <div class="feasibility-row" id="fTenureRow">
+          <span class="fl" data-i18n="tenure">Tenure</span>
+          <span class="fv" id="fTenure"></span>
+        </div>
+        <div class="feasibility-row" id="fMoratoriumRow">
+          <span class="fl" data-i18n="moratorium">Moratorium</span>
+          <span class="fv" id="fMoratorium"></span>
+        </div>
+        <div class="feasibility-row" id="fFrequencyRow">
+          <span class="fl" data-i18n="repaymentFrequency">Repayment Frequency</span>
+          <span class="fv" id="fFrequency"></span>
+        </div>
+        <div class="feasibility-row highlight" id="fEmiRow">
+          <span class="fl" data-i18n="illustrativeQuarterlyInstalment">Illustrative Quarterly Instalment</span>
+          <span class="fv" id="fEmi"></span>
+        </div>
+      </div>
+
+      <!-- Scheme Details -->
+      <div class="card" id="schemeCard">
+        <div class="card-title"><span class="icon">🏦</span> <span data-i18n="schemeDetails">Scheme Details</span></div>
+        <div id="schemeContent"></div>
+      </div>
+
+      <!-- Instalment Breakdown (Quarterly as primary) -->
+      <div class="card" id="emiCard">
+        <div class="card-title"><span class="icon">📅</span> <span data-i18n="repaymentBreakdown">Repayment Breakdown</span></div>
+        <p style="font-size:0.85rem;color:var(--text-light);margin-bottom:4px;" data-i18n="repaymentBreakdownDesc">
+          <strong>Illustrative repayment calculation</strong> based on the published beneficiary interest rate.
+          Actual repayment is subject to the sanctioned loan terms.
+        </p>
+        <div id="emiDetails"></div>
+        <div class="instalment-grid" id="emiGrid"></div>
+      </div>
+
+      <!-- Moratorium -->
+      <div class="card" id="moratoriumCard">
+        <div class="card-title"><span class="icon">⏳</span> <span data-i18n="moratoriumPeriod">Moratorium Period</span></div>
+        <div id="moratoriumContent"></div>
+      </div>
+
+      <!-- Repayment Schedule -->
+      <div class="card" id="scheduleCard">
+        <div class="card-title section-toggle open" onclick="toggleSection('scheduleBody', this)">
+          <span class="arrow">▶</span>
+          <span class="icon">📋</span> <span data-i18n="repaymentSchedule">Repayment Schedule</span>
+        </div>
+        <div class="collapsible open" id="scheduleBody">
+          <div class="schedule-tabs">
+            <button class="tab-btn active" onclick="showTab('quarterly', this)" data-i18n="tabQuarterly">Quarterly (Primary)</button>
+            <button class="tab-btn" onclick="showTab('monthly', this)" data-i18n="tabMonthly">Monthly (Reference)</button>
+          </div>
+          <div id="quarterlyTable" class="schedule-table-wrap"></div>
+          <div id="monthlyTable" class="schedule-table-wrap" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Source / Reference -->
+      <div class="source-ref">
+        <strong data-i18n="sourceTitle">📚 Source / Reference:</strong><br>
+        <span data-i18n="sourceLine1">Ministry of Social Justice &amp; Empowerment — Annual Report 2025-26</span><br>
+        <span data-i18n="sourceLine2">National Scheduled Castes Finance &amp; Development Corporation (NSFDC) concessional financing schemes.</span><br>
+        <em data-i18n="sourceLine3">Actual eligibility, sanction, and repayment terms are subject to the latest official guidelines and the sanctioning agency.</em>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer">
+        <strong data-i18n="disclaimerTitle">⚠ Disclaimer:</strong>
+        <span data-i18n="disclaimerText">Figures are based on the MoSJE Annual Report 2025-26 / SIH problem-statement assumptions
+        and are for advisory/illustrative purposes only. The quarterly instalment shown is an illustrative calculation
+        using the standard reducing-balance formula with quarterly periods. Actual repayment is subject to the sanctioned
+        loan terms. This calculator does <em>not</em> guarantee loan eligibility.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT — Financial Engine + i18n (deterministic, no AI)
+       ============================================================ -->
+  <script>
+    // -----------------------------------------------------------
+    // i18n — Translation system
+    // -----------------------------------------------------------
+    let currentLang = localStorage.getItem('sih_calc_lang') || 'en';
+
+    const i18n = {
+      en: {
+        title: "₹ Financial Calculator",
+        subtitle: "Calculate your project cost, loan eligibility & repayment schedule",
+        enterContribution: "Enter Your Contribution",
+        inputDescription: "Enter the amount you can contribute (your margin capital). The calculator will estimate the total project cost, potential loan, and recommended scheme.",
+        marginLabel: "Available Margin Capital (₹)",
+        marginPlaceholder: "e.g. 1,00,000",
+        calculateBtn: "Calculate",
+        resetBtn: "Reset",
+        feasibilitySummary: "Financial Feasibility Summary",
+        yourContribution: "Your Contribution",
+        projectCostEst: "Project Cost (estimated)",
+        potentialLoan: "Potential Loan",
+        recommendedScheme: "Recommended Scheme",
+        interestRate: "Interest Rate",
+        tenure: "Tenure",
+        moratorium: "Moratorium",
+        repaymentFrequency: "Repayment Frequency",
+        illustrativeQuarterlyInstalment: "Illustrative Quarterly Instalment",
+        schemeDetails: "Scheme Details",
+        repaymentBreakdown: "Repayment Breakdown",
+        repaymentBreakdownDesc: "<strong>Illustrative repayment calculation</strong> based on the published beneficiary interest rate. Actual repayment is subject to the sanctioned loan terms.",
+        moratoriumPeriod: "Moratorium Period",
+        repaymentSchedule: "Repayment Schedule",
+        tabQuarterly: "Quarterly (Primary)",
+        tabMonthly: "Monthly (Reference)",
+        sourceTitle: "📚 Source / Reference:",
+        sourceLine1: "Ministry of Social Justice & Empowerment — Annual Report 2025-26",
+        sourceLine2: "National Scheduled Castes Finance & Development Corporation (NSFDC) concessional financing schemes.",
+        sourceLine3: "Actual eligibility, sanction, and repayment terms are subject to the latest official guidelines and the sanctioning agency.",
+        disclaimerTitle: "⚠ Disclaimer:",
+        disclaimerText: 'Figures are based on the MoSJE Annual Report 2025-26 / SIH problem-statement assumptions and are for advisory/illustrative purposes only. The quarterly instalment shown is an illustrative calculation using the standard reducing-balance formula with quarterly periods. Actual repayment is subject to the sanctioned loan terms. This calculator does <em>not</em> guarantee loan eligibility.',
+        // Scheme names
+        microFinanceScheme: "Micro Finance Scheme",
+        termLoanScheme: "Term Loan Scheme",
+        noSchemeAvailable: "No scheme available",
+        // Validation
+        valEmpty: "Please enter your available margin capital.",
+        valInvalid: "Please enter a valid number (e.g., 1,00,000).",
+        valZero: "Margin capital must be greater than zero.",
+        valNegative: "Margin capital cannot be negative.",
+        // Warning
+        warningExceeds: "<strong>⚠ Note:</strong> Your calculated project cost of {projectCost} exceeds the maximum project cost supported by the schemes in this prototype. Maximum supported project cost: {maxProjectCost}. Maximum stated loan amount: {maxLoan}.",
+        // Feasibility dynamic
+        yearsTotalSchemePeriod: "total scheme period",
+        monthsIncludedInTenure: "included in tenure",
+        quarterlyInstalments: "quarterly instalments",
+        // Scheme card labels
+        labelInterestRate: "Interest Rate",
+        labelMaxProjectCost: "Max Project Cost",
+        labelMaxLoanAmount: "Max Loan Amount",
+        labelTenure: "Tenure",
+        labelMoratorium: "Moratorium",
+        labelRepaymentFrequency: "Repayment Frequency",
+        labelYourLoan: "Your Loan",
+        schemeDisclaimer: "Scheme parameters are based on the SIH problem statement and verified official guidelines. Actual eligibility and sanction terms are subject to the applicable scheme rules.",
+        // Instalment breakdown
+        labelLoanPrincipal: "Loan Principal",
+        labelAnnualInterestRate: "Annual Interest Rate",
+        labelQuarterlyInterestRate: "Quarterly Interest Rate",
+        labelTotalSchemePeriod: "Total Scheme Period",
+        labelRepaymentInstalments: "Repayment Instalments",
+        quartersWord: "quarters",
+        yearsWord: "years",
+        monthsWord: "months",
+        quarterlyInstalmentsWord: "quarterly instalments",
+        instQuarterlyInstalment: "Illustrative Quarterly Instalment",
+        instTotalRepayment: "Total Repayment",
+        instTotalInterest: "Total Interest",
+        instMonthlyEquivalent: "Monthly Equivalent (reference only)",
+        // Moratorium content
+        morTotalSchemePeriod: "Total Scheme Period",
+        morMoratorium: "Moratorium",
+        morExtendedMoratorium: "Extended Moratorium",
+        morPlantationConstruction: "plantation/construction",
+        morRepaymentPeriod: "Repayment Period After Moratorium",
+        morRepaymentInstalments: "Repayment Instalments",
+        morNote: "Note: The moratorium period is shown separately. How interest during the moratorium is treated (capitalized, waived, or collected) is not specified in the problem statement and must be verified against official guidelines.",
+        // Table headers
+        thQuarter: "Quarter",
+        thStatus: "Status",
+        thOpening: "Opening Balance",
+        thInstalment: "Instalment",
+        thPrincipal: "Principal",
+        thInterest: "Interest",
+        thClosing: "Closing Balance",
+        thMonth: "Month",
+        thEMI: "EMI",
+        thHash: "#",
+        // Status badges
+        badgeMoratorium: "🕐 Moratorium",
+        badgeRepayment: "💰 Repayment",
+        subjectToTerms: "Subject to scheme terms",
+        // Repayment schedule - months
+        monthAbbr: "mo",
+      },
+
+      hi: {
+        title: "₹ वित्तीय कैलकुलेटर",
+        subtitle: "अपनी परियोजना लागत, ऋण पात्रता और पुनर्भुगतान कार्यक्रम की गणना करें",
+        enterContribution: "अपना योगदान दर्ज करें",
+        inputDescription: "वह राशि दर्ज करें जो आप योगदान कर सकते हैं (आपकी मार्जिन कैपिटल)। कैलकुलेटर कुल परियोजना लागत, संभावित ऋण और अनुशंसित योजना का अनुमान लगाएगा।",
+        marginLabel: "उपलब्ध मार्जिन कैपिटल (₹)",
+        marginPlaceholder: "जैसे 1,00,000",
+        calculateBtn: "गणना करें",
+        resetBtn: "रीसेट",
+        feasibilitySummary: "वित्तीय व्यवहार्यता सारांश",
+        yourContribution: "आपका योगदान",
+        projectCostEst: "परियोजना लागत (अनुमानित)",
+        potentialLoan: "संभावित ऋण",
+        recommendedScheme: "अनुशंसित योजना",
+        interestRate: "ब्याज दर",
+        tenure: "अवधि",
+        moratorium: "मोराटोरियम",
+        repaymentFrequency: "पुनर्भुगतान आवृत्ति",
+        illustrativeQuarterlyInstalment: "अनुमानित त्रैमासिक किस्त",
+        schemeDetails: "योजना विवरण",
+        repaymentBreakdown: "पुनर्भुगतान विवरण",
+        repaymentBreakdownDesc: "<strong>अनुमानित पुनर्भुगतान गणना</strong> प्रकाशित लाभार्थी ब्याज दर पर आधारित है। वास्तविक पुनर्भुगतान स्वीकृत ऋण शर्तों के अधीन है।",
+        moratoriumPeriod: "मोराटोरियम अवधि",
+        repaymentSchedule: "पुनर्भुगतान कार्यक्रम",
+        tabQuarterly: "त्रैमासिक (प्राथमिक)",
+        tabMonthly: "मासिक (संदर्भ)",
+        sourceTitle: "📚 स्रोत / संदर्भ:",
+        sourceLine1: "सामाजिक न्याय और अधिकारिता मंत्रालय — वार्षिक रिपोर्ट 2025-26",
+        sourceLine2: "राष्ट्रीय अनुसूचित जाति वित्त एवं विकास निगम (NSFDC) रियायती वित्तपोषण योजनाएं।",
+        sourceLine3: "वास्तविक पात्रता, स्वीकृति और पुनर्भुगतान की शर्तें नवीनतम आधिकारिक दिशानिर्देशों और स्वीकृति एजेंसी के अधीन हैं।",
+        disclaimerTitle: "⚠ अस्वीकरण:",
+        disclaimerText: 'आंकड़े MoSJE वार्षिक रिपोर्ट 2025-26 / SIH समस्या कथन के आधार पर हैं और केवल सलाहकार/दृष्टांत उद्देश्यों के लिए हैं। दिखाया गया त्रैमासिक किस्त मानक घटते-शेष सूत्र का उपयोग करके एक अनुमानित गणना है। वास्तविक पुनर्भुगतान स्वीकृत ऋण शर्तों के अधीन है। यह कैलकुलेटर ऋण पात्रता की <em>गारंटी नहीं</em> देता है।',
+        // Scheme names
+        microFinanceScheme: "सूक्ष्म वित्त योजना",
+        termLoanScheme: "टर्म लोन योजना",
+        noSchemeAvailable: "कोई योजना उपलब्ध नहीं",
+        // Validation
+        valEmpty: "कृपया अपनी उपलब्ध मार्जिन कैपिटल दर्ज करें।",
+        valInvalid: "कृपया एक वैध संख्या दर्ज करें (जैसे 1,00,000)।",
+        valZero: "मार्जिन कैपिटल शून्य से अधिक होनी चाहिए।",
+        valNegative: "मार्जिन कैपिटल नकारात्मक नहीं हो सकती।",
+        // Warning
+        warningExceeds: "<strong>⚠ सूचना:</strong> आपकी गणना की गई परियोजना लागत {projectCost} इस प्रोटोटाइप में समर्थित अधिकतम परियोजना लागत से अधिक है। अधिकतम समर्थित परियोजना लागत: {maxProjectCost}। अधिकतम निर्दिष्ट ऋण राशि: {maxLoan}।",
+        // Feasibility dynamic
+        yearsTotalSchemePeriod: "कुल योजना अवधि",
+        monthsIncludedInTenure: "अवधि में शामिल",
+        quarterlyInstalments: "त्रैमासिक किस्तें",
+        // Scheme card labels
+        labelInterestRate: "ब्याज दर",
+        labelMaxProjectCost: "अधिकतम परियोजना लागत",
+        labelMaxLoanAmount: "अधिकतम ऋण राशि",
+        labelTenure: "अवधि",
+        labelMoratorium: "मोराटोरियम",
+        labelRepaymentFrequency: "पुनर्भुगतान आवृत्ति",
+        labelYourLoan: "आपका ऋण",
+        schemeDisclaimer: "योजना मानकर SIH समस्या कथन और सत्यापित आधिकारिक दिशानिर्देशों पर आधारित हैं। वास्तविक पात्रता और स्वीकृति की शर्तें लागू योजना नियमों के अधीन हैं।",
+        // Instalment breakdown
+        labelLoanPrincipal: "ऋण मूलधन",
+        labelAnnualInterestRate: "वार्षिक ब्याज दर",
+        labelQuarterlyInterestRate: "त्रैमासिक ब्याज दर",
+        labelTotalSchemePeriod: "कुल योजना अवधि",
+        labelRepaymentInstalments: "पुनर्भुगतान किस्तें",
+        quartersWord: "त्रैमासिक",
+        yearsWord: "वर्ष",
+        monthsWord: "महीने",
+        quarterlyInstalmentsWord: "त्रैमासिक किस्तें",
+        instQuarterlyInstalment: "अनुमानित त्रैमासिक किस्त",
+        instTotalRepayment: "कुल पुनर्भुगतान",
+        instTotalInterest: "कुल ब्याज",
+        instMonthlyEquivalent: "मासिक समतुल्य (केवल संदर्भ)",
+        // Moratorium content
+        morTotalSchemePeriod: "कुल योजना अवधि",
+        morMoratorium: "मोराटोरियम",
+        morExtendedMoratorium: "विस्तारित मोराटोरियम",
+        morPlantationConstruction: "वृक्षारोपण/निर्माण",
+        morRepaymentPeriod: "मोराटोरियम के बाद पुनर्भुगतान अवधि",
+        morRepaymentInstalments: "पुनर्भुगतान किस्तें",
+        morNote: "नोट: मोराटोरियम अवधि अलग से दिखाई गई है। मोराटोरियम के दौरान ब्याज का व्यवहार (पूंजीकृत, माफ या एकत्र) समस्या कथन में निर्दिष्ट नहीं है और आधिकारिक दिशानिर्देशों के विरुद्ध सत्यापित होना चाहिए।",
+        // Table headers
+        thQuarter: "त्रैमासिक",
+        thStatus: "स्थिति",
+        thOpening: "शेष राशि",
+        thInstalment: "किस्त",
+        thPrincipal: "मूलधन",
+        thInterest: "ब्याज",
+        thClosing: "अंतिम शेष",
+        thMonth: "माह",
+        thEMI: "ईएमआई",
+        thHash: "#",
+        // Status badges
+        badgeMoratorium: "🕐 मोराटोरियम",
+        badgeRepayment: "💰 पुनर्भुगतान",
+        subjectToTerms: "योजना शर्तों के अधीन",
+        monthAbbr: "माह",
+      },
+
+      mr: {
+        title: "₹ आर्थिक कॅल्क्युलेटर",
+        subtitle: "तुमच्या प्रकल्पखर्च, कर्ज पात्रता आणि परतफेडवेळापत्रकाची गणना करा",
+        enterContribution: "तुमचा सहभाग नमूद करा",
+        inputDescription: "तुम्ही किती रक्कम देऊ शकता (तुमची मार्जिन मूलधन) हे नमूद करा. कॅल्क्युलेटर एकूण प्रकल्पखर्च, शक्य कर्ज आणि शिफारस केलेल्या योजनेचा अंदाज देईल.",
+        marginLabel: "उपलब्ध मार्जिन मूलधन (₹)",
+        marginPlaceholder: "उदा. 1,00,000",
+        calculateBtn: "गणना करा",
+        resetBtn: "रीसेट",
+        feasibilitySummary: "आर्थिक व्यवहार्यता सारांश",
+        yourContribution: "तुमचा सहभाग",
+        projectCostEst: "प्रकल्पखर्च (अंदाजे)",
+        potentialLoan: "शक्य कर्ज",
+        recommendedScheme: "शिफारस केलेली योजना",
+        interestRate: "व्याज दर",
+        tenure: "कालावधी",
+        moratorium: "मोराटोरियम",
+        repaymentFrequency: "परतफेड वारंवारता",
+        illustrativeQuarterlyInstalment: "साधारण त्रैमासिक हप्ता",
+        schemeDetails: "योजनेचे तपशील",
+        repaymentBreakdown: "परतफेड तपशील",
+        repaymentBreakdownDesc: "<strong>साधारण परतफेड गणना</strong> प्रकाशित लाभार्थी व्याज दरवर आधारित आहे. प्रत्यक्ष परतफेड मंजूर कर्ज अटींनुसार असते.",
+        moratoriumPeriod: "मोराटोरियम कालावधी",
+        repaymentSchedule: "परतफेडवेळापत्रक",
+        tabQuarterly: "त्रैमासिक (प्राथमिक)",
+        tabMonthly: "मासिक (संदर्भ)",
+        sourceTitle: "📚 स्रोत / संदर्भ:",
+        sourceLine1: "सामाजिक न्याय व सक्षमीकरण मंत्रालय — वार्षिक अहवाल 2025-26",
+        sourceLine2: "राष्ट्रीय अनुसूचित जाती वित्त व विकास निगम (NSFDC) सवलतीच्या वित्तपुरवठा योजना.",
+        sourceLine3: "प्रत्यक्ष पात्रता, मंजूरी आणि परतफेड अटी नवीनतम अधिकृत मार्गदर्शक तत्त्वांवर आणि मंजूरी संस्थेवर अवलंबून असतात.",
+        disclaimerTitle: "⚠ अस्वीकरण:",
+        disclaimerText: 'आकडेवरील MoSJE वार्षिक अहवाल 2025-26 / SIH समस्या विधानावर आधारित आहेत आणि केवळ सल्ला/दृष्टांत उद्देशांसाठी आहेत. दाखवलेला त्रैमासिक हप्ता प्रमाणित घटती शिल्लक सूत्राचा वापर करून एक साधारण गणना आहे. प्रत्यक्ष परतफेड मंजूर कर्ज अटींनुसार असते. हा कॅल्क्युलेटर कर्ज पात्रतेची <em>हमी देत नाही</em>.',
+        // Scheme names
+        microFinanceScheme: "सूक्ष्म वित्त योजना",
+        termLoanScheme: "टर्म लोन योजना",
+        noSchemeAvailable: "कोणतीही योजना उपलब्ध नाही",
+        // Validation
+        valEmpty: "कृपया तुमचे उपलब्ध मार्जिन मूलधन नमूद करा.",
+        valInvalid: "कृपया वैध संख्या नमूद करा (उदा. 1,00,000).",
+        valZero: "मार्जिन मूलधन शून्यापेक्षा जास्त असणे आवश्यक आहे.",
+        valNegative: "मार्जिन मूलधन ऋण असू शकत नाही.",
+        // Warning
+        warningExceeds: "<strong>⚠ सूचना:</strong> तुमचा गणना केलेला प्रकल्पखर्च {projectCost} या प्रोटोटाइपमध्ये समर्थित कमाल प्रकल्पखर्चपेक्षा जास्त आहे. कमाल समर्थित प्रकल्पखर्च: {maxProjectCost}. कमाल निर्दिष्ट कर्ज रक्कम: {maxLoan}.",
+        // Feasibility dynamic
+        yearsTotalSchemePeriod: "एकूण योजना कालावधी",
+        monthsIncludedInTenure: "कालावधीमध्ये समाविष्ट",
+        quarterlyInstalments: "त्रैमासिक हप्ते",
+        // Scheme card labels
+        labelInterestRate: "व्याज दर",
+        labelMaxProjectCost: "कमाल प्रकल्पखर्च",
+        labelMaxLoanAmount: "कमाल कर्ज रक्कम",
+        labelTenure: "कालावधी",
+        labelMoratorium: "मोराटोरियम",
+        labelRepaymentFrequency: "परतफेड वारंवारता",
+        labelYourLoan: "तुमचे कर्ज",
+        schemeDisclaimer: "योजनेचे नियम SIH समस्या विधान आणि प्रमाणित अधिकृत मार्गदर्शक तत्त्वांवर आधारित आहेत. प्रत्यक्ष पात्रता आणि मंजूरी अटी लागू योजना नियमांनुसार असतात.",
+        // Instalment breakdown
+        labelLoanPrincipal: "कर्ज मूलधन",
+        labelAnnualInterestRate: "वार्षिक व्याज दर",
+        labelQuarterlyInterestRate: "त्रैमासिक व्याज दर",
+        labelTotalSchemePeriod: "एकूण योजना कालावधी",
+        labelRepaymentInstalments: "परतफेड हप्ते",
+        quartersWord: "त्रैमासिक",
+        yearsWord: "वर्षे",
+        monthsWord: "महिने",
+        quarterlyInstalmentsWord: "त्रैमासिक हप्ते",
+        instQuarterlyInstalment: "साधारण त्रैमासिक हप्ता",
+        instTotalRepayment: "एकूण परतफेड",
+        instTotalInterest: "एकूण व्याज",
+        instMonthlyEquivalent: "मासिक समतुल्य (फक्त संदर्भ)",
+        // Moratorium content
+        morTotalSchemePeriod: "एकूण योजना कालावधी",
+        morMoratorium: "मोराटोरियम",
+        morExtendedMoratorium: "विस्तारित मोराटोरियम",
+        morPlantationConstruction: "रुपे लावणे/बांधकाम",
+        morRepaymentPeriod: "मोराटोरियमनंतर परतफेड कालावधी",
+        morRepaymentInstalments: "परतफेड हप्ते",
+        morNote: "टीप: मोराटोरियम कालावधी वेगवेगळी दर्शवली आहे. मोराटोरियम दरम्यान व्याजाशी कसा व्यवहार केला जातो (मूलधनात जोडला, माफ किंवा वसूल) हे समस्या विधानात निर्दिष्ट नाही आणि अधिकृत मार्गदर्शक तत्त्वांनुसार प्रमाणित करणे आवश्यक आहे.",
+        // Table headers
+        thQuarter: "त्रैमासिक",
+        thStatus: "स्थिती",
+        thOpening: "सुरुवातीची शिल्लक",
+        thInstalment: "हप्ता",
+        thPrincipal: "मूलधन",
+        thInterest: "व्याज",
+        thClosing: "शेवटची शिल्लक",
+        thMonth: "महिना",
+        thEMI: "ईएमआय",
+        thHash: "#",
+        // Status badges
+        badgeMoratorium: "🕐 मोराटोरियम",
+        badgeRepayment: "💰 परतफेड",
+        subjectToTerms: "योजना अटींनुसार",
+        monthAbbr: "महिना",
+      }
+    };
+
+    function t(key) {
+      return (i18n[currentLang] && i18n[currentLang][key]) || (i18n.en[key]) || key;
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('sih_calc_lang', lang);
+      document.documentElement.lang = lang === 'hi' ? 'hi' : lang === 'mr' ? 'mr' : 'en';
+
+      // Update language buttons
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        if ((lang === 'en' && btn.textContent.trim() === 'English') ||
+            (lang === 'hi' && btn.textContent.trim() === 'हिन्दी') ||
+            (lang === 'mr' && btn.textContent.trim() === 'मराठी')) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update all static text via data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.innerHTML = t(key);
+      });
+
+      // Update placeholders
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        el.placeholder = t(key);
+      });
+
+      // Re-render dynamic content if results are visible
+      if (document.getElementById('resultsArea').style.display !== 'none') {
+        rerenderResults();
+      }
+    }
+
+    // -----------------------------------------------------------
+    // SCHEME CONFIGURATION — from MoSJE Annual Report 2025-26
+    // Subject to verification against current official guidelines.
+    // -----------------------------------------------------------
+    const MICRO_FINANCE = {
+      name: "Micro Finance Scheme",
+      nameHi: "सूक्ष्म वित्त योजना",
+      nameMr: "सूक्ष्म वित्त योजना",
+      description: "Concessional micro-finance for projects up to ₹1.40 lakh.",
+      maxProjectCost: 140000,
+      fundingPct: 0.9,
+      maxLoan: 125000,
+      rate: 0.065,
+      tenureYears: 3,
+      moratoriumMonths: 3,
+      extendedMoratoriumMonths: 0,
+      repaymentFrequency: "Quarterly",
+    };
+
+    const TERM_LOAN = {
+      name: "Term Loan Scheme",
+      nameHi: "टर्म लोन योजना",
+      nameMr: "टर्म लोन योजना",
+      description: "Term loan for projects above ₹1.40 lakh and up to ₹50 lakh.",
+      maxProjectCost: 5000000,
+      fundingPct: 0.9,
+      maxLoan: 4500000,
+      rate: 0.08,
+      tenureYears: 7,
+      moratoriumMonths: 6,
+      extendedMoratoriumMonths: 12,
+      repaymentFrequency: "Quarterly",
+    };
+
+    const SCHEMES = [MICRO_FINANCE, TERM_LOAN];
+    const MAX_PROJECT_COST = 5000000;
+    const MAX_LOAN = 4500000;
+    const CONTRIBUTION_PCT = 0.10;
+
+    function getSchemeName(scheme) {
+      if (currentLang === 'hi') return scheme.nameHi;
+      if (currentLang === 'mr') return scheme.nameMr;
+      return scheme.name;
+    }
+
+    // -----------------------------------------------------------
+    // FORMATTING — Indian ₹ format
+    // -----------------------------------------------------------
+    function formatINR(n) {
+      return "₹" + Math.round(n).toLocaleString("en-IN");
+    }
+    function formatINRDec(n) {
+      return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtPct(r) {
+      return (r * 100).toFixed(r * 100 % 1 === 0 ? 0 : 1) + "%";
+    }
+
+    // -----------------------------------------------------------
+    // VALIDATION
+    // -----------------------------------------------------------
+    function validateMargin(raw) {
+      if (!raw || !raw.trim()) {
+        return { ok: false, msg: t('valEmpty') };
+      }
+      const cleaned = raw.trim().replace(/[₹,\s]/g, "");
+      const val = parseFloat(cleaned);
+      if (isNaN(val)) {
+        return { ok: false, msg: t('valInvalid') };
+      }
+      if (val === 0) return { ok: false, msg: t('valZero') };
+      if (val < 0) return { ok: false, msg: t('valNegative') };
+      return { ok: true, val };
+    }
+
+    // -----------------------------------------------------------
+    // CORE CALCULATIONS
+    // -----------------------------------------------------------
+    function calcProjectCost(margin) {
+      return margin / CONTRIBUTION_PCT;
+    }
+
+    function selectScheme(projectCost) {
+      for (const s of SCHEMES) {
+        if (projectCost <= s.maxProjectCost) return s;
+      }
+      return null;
+    }
+
+    function calcLoan(projectCost, scheme) {
+      const raw = projectCost * scheme.fundingPct;
+      return Math.min(raw, scheme.maxLoan);
+    }
+
+    // -----------------------------------------------------------
+    // QUARTERLY INSTALMENT
+    // -----------------------------------------------------------
+    function calcQuarterlyInstalment(principal, scheme) {
+      const R = scheme.rate / 4;
+      const totalSchemeQuarters = scheme.tenureYears * 4;
+      const moratoriumQuarters = Math.floor(scheme.moratoriumMonths / 3);
+      const N = totalSchemeQuarters - moratoriumQuarters;
+      let qi;
+      if (R === 0) {
+        qi = principal / N;
+      } else {
+        const factor = Math.pow(1 + R, N);
+        qi = (principal * R * factor) / (factor - 1);
+      }
+      const totalRepayment = qi * N;
+      const totalInterest = totalRepayment - principal;
+      return {
+        qi, totalRepayment, totalInterest, R, N,
+        quarterlyRate: R,
+        totalSchemeQuarters, moratoriumQuarters,
+        repaymentQuarters: N,
+      };
+    }
+
+    // -----------------------------------------------------------
+    // MONTHLY EMI — reference only
+    // -----------------------------------------------------------
+    function calcMonthlyEmiReference(principal, scheme) {
+      const r = scheme.rate / 12;
+      const totalSchemeMonths = scheme.tenureYears * 12;
+      const n = totalSchemeMonths - scheme.moratoriumMonths;
+      let emi;
+      if (r === 0) {
+        emi = principal / n;
+      } else {
+        const f = Math.pow(1 + r, n);
+        emi = (principal * r * f) / (f - 1);
+      }
+      const totalPaid = emi * n;
+      const totalInterest = totalPaid - principal;
+      return { emi, totalPaid, totalInterest, n, r, monthlyRate: r };
+    }
+
+    // -----------------------------------------------------------
+    // QUARTERLY REPAYMENT SCHEDULE (PRIMARY)
+    // -----------------------------------------------------------
+    function genQuarterlySchedule(principal, scheme) {
+      const { qi, R, N, totalSchemeQuarters, moratoriumQuarters } = calcQuarterlyInstalment(principal, scheme);
+      const rows = [];
+      let bal = principal;
+
+      for (let q = 1; q <= totalSchemeQuarters; q++) {
+        if (q <= moratoriumQuarters) {
+          rows.push({
+            quarter: q, status: "moratorium", repaymentNum: null,
+            opening: Math.round(bal * 100) / 100, instalment: 0, princ: 0,
+            interest: null, closing: Math.round(bal * 100) / 100,
+          });
+        } else {
+          const repaymentNum = q - moratoriumQuarters;
+          let interest = Math.round(bal * R * 100) / 100;
+          let princ = Math.round((qi - interest) * 100) / 100;
+          let actualQi = qi;
+          if (repaymentNum === N) {
+            princ = Math.round(bal * 100) / 100;
+            interest = Math.round(bal * R * 100) / 100;
+            actualQi = Math.round((princ + interest) * 100) / 100;
+          }
+          const newBal = Math.max(0, Math.round((bal - princ) * 100) / 100);
+          rows.push({
+            quarter: q, status: "repayment", repaymentNum,
+            opening: Math.round(bal * 100) / 100,
+            instalment: Math.round(actualQi * 100) / 100,
+            princ, interest, closing: newBal,
+          });
+          bal = newBal;
+        }
+      }
+      return rows;
+    }
+
+    // -----------------------------------------------------------
+    // MONTHLY REPAYMENT SCHEDULE (SECONDARY)
+    // -----------------------------------------------------------
+    function genMonthlySchedule(principal, scheme) {
+      const { emi, n, r } = calcMonthlyEmiReference(principal, scheme);
+      const rows = [];
+      let bal = principal;
+      for (let m = 1; m <= n; m++) {
+        const interest = Math.round(bal * r * 100) / 100;
+        let princ = Math.round((emi - interest) * 100) / 100;
+        let actualEmi = emi;
+        if (m === n) { princ = Math.round(bal * 100) / 100; actualEmi = princ + interest; }
+        const newBal = Math.max(0, Math.round((bal - princ) * 100) / 100);
+        rows.push({
+          month: m, opening: Math.round(bal * 100) / 100,
+          emi: Math.round(actualEmi * 100) / 100,
+          princ, interest, closing: newBal,
+        });
+        bal = newBal;
+      }
+      return rows;
+    }
+
+    // -----------------------------------------------------------
+    // UI HANDLERS
+    // -----------------------------------------------------------
+    let currentQuarterlySchedule = [];
+    let currentMonthlySchedule = [];
+    let lastCalcResult = null; // Store for re-render on language change
+
+    function handleCalculate() {
+      const input = document.getElementById("marginInput");
+      const errEl = document.getElementById("errorMsg");
+      const val = validateMargin(input.value);
+
+      input.classList.remove("error");
+      errEl.textContent = "";
+
+      if (!val.ok) {
+        input.classList.add("error");
+        errEl.textContent = val.msg;
+        return;
+      }
+
+      const margin = val.val;
+      const projectCost = calcProjectCost(margin);
+      const scheme = selectScheme(projectCost);
+      const exceedsLimit = projectCost > MAX_PROJECT_COST;
+
+      lastCalcResult = { margin, projectCost, scheme, exceedsLimit };
+
+      // Show results
+      document.getElementById("resultsArea").style.display = "block";
+
+      // Warning
+      const warnEl = document.getElementById("warningBox");
+      if (exceedsLimit) {
+        warnEl.innerHTML = t('warningExceeds')
+          .replace('{projectCost}', formatINR(projectCost))
+          .replace('{maxProjectCost}', formatINR(MAX_PROJECT_COST))
+          .replace('{maxLoan}', formatINR(MAX_LOAN));
+        warnEl.style.display = "block";
+      } else {
+        warnEl.style.display = "none";
+      }
+
+      // Feasibility summary
+      document.getElementById("fMargin").textContent = formatINR(margin);
+      document.getElementById("fProjectCost").textContent = formatINR(projectCost);
+
+      if (scheme) {
+        const loan = calcLoan(projectCost, scheme);
+        document.getElementById("fLoan").textContent = formatINR(loan);
+        document.getElementById("fScheme").textContent = getSchemeName(scheme);
+        document.getElementById("fInterest").textContent = fmtPct(scheme.rate) + " p.a.";
+        document.getElementById("fTenure").textContent = scheme.tenureYears + " " + t('yearsWord') + " (" + t('yearsTotalSchemePeriod') + ")";
+        document.getElementById("fMoratorium").textContent = scheme.moratoriumMonths + " " + t('monthsWord') + " (" + t('monthsIncludedInTenure') + ")";
+        document.getElementById("fFrequency").textContent = t('quarterlyInstalments');
+
+        const qiResult = calcQuarterlyInstalment(loan, scheme);
+        document.getElementById("fEmi").textContent = formatINRDec(qiResult.qi);
+
+        document.getElementById("fSchemeRow").style.display = "flex";
+        document.getElementById("fInterestRow").style.display = "flex";
+        document.getElementById("fTenureRow").style.display = "flex";
+        document.getElementById("fMoratoriumRow").style.display = "flex";
+        document.getElementById("fFrequencyRow").style.display = "flex";
+        document.getElementById("fEmiRow").style.display = "flex";
+
+        renderSchemeCard(scheme, loan);
+        renderInstalmentBreakdown(loan, scheme, qiResult);
+        renderMoratorium(scheme);
+
+        currentQuarterlySchedule = genQuarterlySchedule(loan, scheme);
+        currentMonthlySchedule = genMonthlySchedule(loan, scheme);
+        renderQuarterlyTable(currentQuarterlySchedule);
+        renderMonthlyTable(currentMonthlySchedule);
+
+        document.getElementById("schemeCard").style.display = "block";
+        document.getElementById("emiCard").style.display = "block";
+        document.getElementById("moratoriumCard").style.display = "block";
+        document.getElementById("scheduleCard").style.display = "block";
+      } else {
+        document.getElementById("fLoan").textContent = "—";
+        document.getElementById("fScheme").textContent = t('noSchemeAvailable');
+        document.getElementById("fSchemeRow").style.display = "flex";
+        document.getElementById("fInterestRow").style.display = "none";
+        document.getElementById("fTenureRow").style.display = "none";
+        document.getElementById("fMoratoriumRow").style.display = "none";
+        document.getElementById("fFrequencyRow").style.display = "none";
+        document.getElementById("fEmiRow").style.display = "none";
+
+        document.getElementById("schemeCard").style.display = "none";
+        document.getElementById("emiCard").style.display = "none";
+        document.getElementById("moratoriumCard").style.display = "none";
+        document.getElementById("scheduleCard").style.display = "none";
+      }
+
+      document.getElementById("resultsArea").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function rerenderResults() {
+      if (!lastCalcResult) return;
+      // Temporarily set the input value and re-run
+      const input = document.getElementById("marginInput");
+      input.value = Math.round(lastCalcResult.margin).toLocaleString("en-IN");
+      handleCalculate();
+    }
+
+    function handleReset() {
+      document.getElementById("marginInput").value = "";
+      document.getElementById("marginInput").classList.remove("error");
+      document.getElementById("errorMsg").textContent = "";
+      document.getElementById("resultsArea").style.display = "none";
+      lastCalcResult = null;
+      document.getElementById("marginInput").focus();
+    }
+
+    function renderSchemeCard(scheme, loan) {
+      const el = document.getElementById("schemeContent");
+      el.innerHTML = `
+        <div class="scheme-card">
+          <div class="scheme-name">${getSchemeName(scheme)}</div>
+          <div class="scheme-details">
+            <div class="scheme-detail">
+              <span class="dl">${t('labelInterestRate')}</span>
+              <span class="dv">${fmtPct(scheme.rate)} p.a.</span>
+            </div>
+            <div class="scheme-detail">
+              <span class="dl">${t('labelMaxProjectCost')}</span>
+              <span class="dv">${formatINR(scheme.maxProjectCost)}</span>
+            </div>
+            <div class="scheme-detail">
+              <span class="dl">${t('labelMaxLoanAmount')}</span>
+              <span class="dv">${formatINR(scheme.maxLoan)}</span>
+            </div>
+            <div class="scheme-detail">
+              <span class="dl">${t('labelTenure')}</span>
+              <span class="dv">${scheme.tenureYears} ${t('yearsWord')}</span>
+            </div>
+            <div class="scheme-detail">
+              <span class="dl">${t('labelMoratorium')}</span>
+              <span class="dv">${scheme.moratoriumMonths} ${t('monthsWord')}</span>
+            </div>
+            <div class="scheme-detail">
+              <span class="dl">${t('labelRepaymentFrequency')}</span>
+              <span class="dv">${scheme.repaymentFrequency}</span>
+            </div>
+            <div class="scheme-detail">
+              <span class="dl">${t('labelYourLoan')}</span>
+              <span class="dv">${formatINR(loan)}</span>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-light);margin-top:12px;">
+          ${t('schemeDisclaimer')}
+        </p>
+      `;
+    }
+
+    function renderInstalmentBreakdown(loan, scheme, qiResult) {
+      const monthlyRef = calcMonthlyEmiReference(loan, scheme);
+      document.getElementById("emiDetails").innerHTML = `
+        <div class="scheme-details" style="margin-top:12px;">
+          <div class="scheme-detail">
+            <span class="dl">${t('labelLoanPrincipal')}</span>
+            <span class="dv">${formatINR(loan)}</span>
+          </div>
+          <div class="scheme-detail">
+            <span class="dl">${t('labelAnnualInterestRate')}</span>
+            <span class="dv">${fmtPct(scheme.rate)}</span>
+          </div>
+          <div class="scheme-detail">
+            <span class="dl">${t('labelQuarterlyInterestRate')}</span>
+            <span class="dv">${(qiResult.quarterlyRate * 100).toFixed(4)}%</span>
+          </div>
+          <div class="scheme-detail">
+            <span class="dl">${t('labelTotalSchemePeriod')}</span>
+            <span class="dv">${qiResult.totalSchemeQuarters} ${t('quartersWord')} (${scheme.tenureYears} ${t('yearsWord')})</span>
+          </div>
+          <div class="scheme-detail">
+            <span class="dl">${t('labelMoratorium')}</span>
+            <span class="dv">${qiResult.moratoriumQuarters} ${t('quartersWord')} (${scheme.moratoriumMonths} ${t('monthsWord')})</span>
+          </div>
+          <div class="scheme-detail">
+            <span class="dl">${t('labelRepaymentInstalments')}</span>
+            <span class="dv">${qiResult.repaymentQuarters} ${t('quarterlyInstalmentsWord')}</span>
+          </div>
+        </div>
+      `;
+      document.getElementById("emiGrid").innerHTML = `
+        <div class="instalment-item">
+          <div class="inst-val">${formatINRDec(qiResult.qi)}</div>
+          <div class="inst-lbl">${t('instQuarterlyInstalment')}</div>
+        </div>
+        <div class="instalment-item">
+          <div class="inst-val">${formatINRDec(qiResult.totalRepayment)}</div>
+          <div class="inst-lbl">${t('instTotalRepayment')}</div>
+        </div>
+        <div class="instalment-item">
+          <div class="inst-val">${formatINRDec(qiResult.totalInterest)}</div>
+          <div class="inst-lbl">${t('instTotalInterest')}</div>
+        </div>
+        <div class="instalment-item" style="margin-top:8px;">
+          <div class="inst-val">${formatINRDec(monthlyRef.emi)}</div>
+          <div class="inst-lbl">${t('instMonthlyEquivalent')}</div>
+        </div>
+      `;
+    }
+
+    function renderMoratorium(scheme) {
+      document.getElementById("moratoriumContent").innerHTML = `
+        <div class="scheme-details">
+          <div class="scheme-detail">
+            <span class="dl">${t('morTotalSchemePeriod')}</span>
+            <span class="dv">${scheme.tenureYears} ${t('yearsWord')} (${scheme.tenureYears * 4} ${t('quartersWord')})</span>
+          </div>
+          <div class="scheme-detail">
+            <span class="dl">${t('morMoratorium')}</span>
+            <span class="dv">${scheme.moratoriumMonths} ${t('monthsWord')} (${Math.floor(scheme.moratoriumMonths / 3)} ${t('quartersWord')})</span>
+          </div>
+          ${scheme.extendedMoratoriumMonths > 0 ? `
+          <div class="scheme-detail">
+            <span class="dl">${t('morExtendedMoratorium')}</span>
+            <span class="dv">${scheme.extendedMoratoriumMonths} ${t('monthsWord')} (${t('morPlantationConstruction')})</span>
+          </div>` : ""}
+          <div class="scheme-detail">
+            <span class="dl">${t('morRepaymentPeriod')}</span>
+            <span class="dv">${(scheme.tenureYears * 12 - scheme.moratoriumMonths) / 12} ${t('yearsWord')} (${scheme.tenureYears * 4 - Math.floor(scheme.moratoriumMonths / 3)} ${t('quartersWord')})</span>
+          </div>
+          <div class="scheme-detail">
+            <span class="dl">${t('morRepaymentInstalments')}</span>
+            <span class="dv">${scheme.tenureYears * 4 - Math.floor(scheme.moratoriumMonths / 3)} ${t('quarterlyInstalmentsWord')}</span>
+          </div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-light);margin-top:12px;">
+          ${t('morNote')}
+        </p>
+      `;
+    }
+
+    function renderQuarterlyTable(rows) {
+      let html = `<table>
+        <thead><tr>
+          <th>${t('thQuarter')}</th><th>${t('thStatus')}</th><th>${t('thOpening')}</th><th>${t('thInstalment')}</th>
+          <th>${t('thPrincipal')}</th><th>${t('thInterest')}</th><th>${t('thClosing')}</th>
+        </tr></thead><tbody>`;
+      for (const r of rows) {
+        const isMoratorium = r.status === "moratorium";
+        const rowClass = isMoratorium ? "moratorium-row" : "";
+        const statusBadge = isMoratorium
+          ? `<span class="status-moratorium">${t('badgeMoratorium')}</span>`
+          : `<span class="status-repayment">${t('badgeRepayment')}</span>`;
+        const instalmentCell = isMoratorium ? "—" : formatINRDec(r.instalment);
+        const princCell = isMoratorium ? "—" : formatINRDec(r.princ);
+        const interestCell = isMoratorium
+          ? `<em style="font-size:0.78rem;color:#7d6608">${t('subjectToTerms')}</em>`
+          : formatINRDec(r.interest);
+        const closingCell = formatINR(r.closing);
+        const repayLabel = isMoratorium ? "" : ` (#${r.repaymentNum})`;
+
+        html += `<tr class="${rowClass}">
+          <td>Q${r.quarter}</td>
+          <td>${statusBadge}</td>
+          <td>${formatINR(r.opening)}</td>
+          <td${!isMoratorium ? ' class="repayment-num"' : ''}>${instalmentCell}${repayLabel}</td>
+          <td>${princCell}</td>
+          <td>${interestCell}</td>
+          <td>${closingCell}</td>
+        </tr>`;
+      }
+      html += "</tbody></table>";
+      document.getElementById("quarterlyTable").innerHTML = html;
+    }
+
+    function renderMonthlyTable(rows) {
+      let html = `<table>
+        <thead><tr>
+          <th>${t('thMonth')}</th><th>${t('thOpening')}</th><th>${t('thEMI')}</th>
+          <th>${t('thPrincipal')}</th><th>${t('thInterest')}</th><th>${t('thClosing')}</th>
+        </tr></thead><tbody>`;
+      for (const r of rows) {
+        html += `<tr>
+          <td>${r.month}</td>
+          <td>${formatINR(r.opening)}</td>
+          <td>${formatINRDec(r.emi)}</td>
+          <td>${formatINRDec(r.princ)}</td>
+          <td>${formatINRDec(r.interest)}</td>
+          <td>${formatINR(r.closing)}</td>
+        </tr>`;
+      }
+      html += "</tbody></table>";
+      document.getElementById("monthlyTable").innerHTML = html;
+    }
+
+    function showTab(tab, btn) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("quarterlyTable").style.display = tab === "quarterly" ? "block" : "none";
+      document.getElementById("monthlyTable").style.display = tab === "monthly" ? "block" : "none";
+    }
+
+    function toggleSection(id, toggle) {
+      const el = document.getElementById(id);
+      el.classList.toggle("open");
+      toggle.classList.toggle("open");
+    }
+
+    // -----------------------------------------------------------
+    // INIT — apply saved language on load
+    // -----------------------------------------------------------
+    (function initLang() {
+      const saved = localStorage.getItem('sih_calc_lang');
+      if (saved && i18n[saved]) {
+        setLanguage(saved);
+      }
+    })();
+
+    // -----------------------------------------------------------
+    // Keyboard support — Enter to calculate
+    // -----------------------------------------------------------
+    document.getElementById("marginInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleCalculate();
+    });
+  </script>
+</body>
+</html>
